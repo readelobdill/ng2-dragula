@@ -61,6 +61,7 @@ export class DragulaService {
     let dragIndex: number;
     let dropIndex: number;
     let sourceModel: any;
+    let dragModels: any[] = [];
     drake.on('remove', (el: any, source: any) => {
       if (!drake.models) {
         return;
@@ -73,30 +74,31 @@ export class DragulaService {
     });
     drake.on('drag', (el: any, source: any) => {
       dragElm = el;
-      dragIndex = this.domIndexOf(el, source);
+      // record models at beginning of drag
+      let index = _this.domIndexOf(el, source);
+      let model = drake.models[drake.containers.indexOf(source)];
+      dragModels.push(model[index]);
     });
     drake.on('drop', (dropElm: any, target: any, source: any) => {
       if (!drake.models || !target) {
         return;
       }
-      dropIndex = this.domIndexOf(dropElm, target);
-      sourceModel = drake.models[drake.containers.indexOf(source)];
-      // console.log('DROP');
-      // console.log(sourceModel);
-      if (target === source) {
-        sourceModel.splice(dropIndex, 0, sourceModel.splice(dragIndex, 1)[0]);
-      } else {
-        let notCopy = dragElm === dropElm;
-        let targetModel = drake.models[drake.containers.indexOf(target)];
-        let dropElmModel = notCopy ? sourceModel[dragIndex] : JSON.parse(JSON.stringify(sourceModel[dragIndex]));
+      dropIndex = _this.minDomIndexOf(dropElms, target);
+      let targetModel = drake.models[drake.containers.indexOf(target)];
 
-        if (notCopy) {
-          sourceModel.splice(dragIndex, 1);
+      // remove from old models before update
+      for (let dragModel of dragModels) {
+        for (let model of drake.models) {
+          let index = model.indexOf(dragModel);
+          if(index > -1) {
+            model.splice(index, 1);
+          }
         }
-        targetModel.splice(dropIndex, 0, dropElmModel);
-        // target.removeChild(dropElm); // element must be removed for ngFor to apply correctly
       }
-      this.dropModel.emit([name, dropElm, target, source]);
+
+      targetModel.splice(dropIndex, 0, ...dragModels);
+      dragModels = [];
+      _this.dropModel.emit([name, dropElms[0], target, source]);
     });
   }
 
@@ -116,5 +118,13 @@ export class DragulaService {
 
   private domIndexOf(child: any, parent: any): any {
     return Array.prototype.indexOf.call(parent.children, child);
+  }
+
+  private minDomIndexOf (children: any, parent: any) {
+    let indexes = [];
+    for (let child of children) {
+        indexes.push(this.domIndexOf(child, parent));
+    }
+    return Math.min(...indexes);
   }
 }
