@@ -44,7 +44,7 @@
     "version": "npm run flow.changelog && git add -A"
   },
   "dependencies": {
-    "dragula": "^3.7.2"
+    "dragula": "readelobdill/dragula"
   },
   "peerDependencies": {
     "@angular/core": "^2.3.0",
